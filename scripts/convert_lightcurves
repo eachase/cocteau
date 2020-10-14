@@ -1,0 +1,138 @@
+#!/usr/bin/env python
+
+__author__ = 'Eve Chase <eachase@lanl.gov>'
+
+from astropy import units as u
+from astropy.cosmology import Planck18_arXiv_v2, z_at_value
+import argparse
+import glob
+import numpy as np
+import pandas as pd
+
+import observations
+import filereaders
+import matrix
+
+
+def get_magmatrix_from_spectra(filenames, angles, bandnames,
+    redshift=0):
+
+    # Set up KN properties dataframe
+    knprops = pd.DataFrame(columns=['angle','morph','wind','md','vd','mw','vw'])
+
+    lightcurve_collection = []
+    count = 0
+
+    fr = filereaders.LANLFileReader()
+
+
+    for i, filename in enumerate(filenames):
+
+        print(f'Reading file {i}: {filename}')
+        # For each angle
+        for angle_col in angles:
+            spectra = fr.read_spectra(filename, 
+                angle=angle_col)
+
+
+            # Extract properties from filename
+            fileprops = fr.get_knprops_from_filename(filename)
+
+            # Report angle in degrees to knprops
+            fileprops_angle = fileprops.copy()
+            fileprops_angle['angle'] = angle_col
+            knprops = knprops.append(fileprops_angle,
+                ignore_index=True)
+
+
+            lightcurves_per_band = None
+            for j, bandname in enumerate(bandnames):
+
+                # Make a lightcurve from the band
+                lc = observations.LightCurve(spectra=spectra, 
+                    band=bands[bandname], redshift=redshift)
+                lightcurve = pd.DataFrame({'time': lc.times.value,
+                    bandname: lc.magnitudes.value})
+
+                # Combine magnitudes for each band
+                if lightcurves_per_band is None:
+                    lightcurves_per_band = lightcurve
+                else:
+                    lightcurves_per_band = pd.merge(lightcurves_per_band,
+                        lightcurve, on='time')
+
+            # Combine magnitudes for each angle
+            lightcurve_collection.append(lightcurves_per_band)
+            count += 1
+
+    # Combine all magnitudes
+    lightcurves = pd.concat(lightcurve_collection, keys=np.arange(count))
+
+    return matrix.MagMatrix(lightcurves.drop(columns=['time']),
+        bandnames=bandnames, times=lightcurves['time'],
+        knprops=knprops, time_units=u.day, mag_units=u.ABmag)
+
+
+
+
+
+if __name__ == '__main__':
+
+    # Input parameters
+    parser = argparse.ArgumentParser()
+
+    # Base directory
+    parser.add_argument('--data-dir', type=str,
+        default='../../../kilonovae/data/kn_sim_cube1.2/')
+
+    # Set number of every other angle to select
+    parser.add_argument('--angle-factor', type=int, default=54)
+
+    # Set number of every other angle to select
+    parser.add_argument('-a', '--angles', nargs='+', type=int)
+
+    # Provide distance to kilonova
+    parser.add_argument('--redshift', type=float, default=0.483,
+        help='Units of Mpc')
+
+    args = parser.parse_args()
+
+    # Read each filter
+    fr = filereaders.FileReader()
+    fr_tab = filereaders.TabFileReader()
+
+    bands = {}
+    bands['GeminiR'] = fr.read_band('filters/Gemini_GMOS-N.r.dat', bandname='GeminiR', wl_units=u.Angstrom)
+    bands['F606W'] = fr.read_band('filters/HST_ACS_WFC.F606W.dat', bandname='F606W', wl_units=u.Angstrom)   
+    bands['F125W'] = fr.read_band('filters/HST_WFC3_IR.F125W.dat', bandname='F125W', wl_units=u.Angstrom)
+    bands['F160W'] = fr.read_band('filters/HST_WFC3_IR.F160W.dat', bandname='F160W', wl_units=u.Angstrom)
+
+    # Get bandnames
+    bandnames = bands.keys()
+
+    # Set angles of interest
+    if args.angles is None:
+        angles = np.arange(0, 54, args.angle_factor)
+        filename_extension = ''
+    else:
+        angles = args.angles
+        filename_extension = f"{('_').join([str(i) for i in angles])}"
+    print(angles)
+
+    # Prepare filenames
+    filenames = glob.glob(f'{args.data_dir}Run_T*_dyn_all_lanth_wind*_all_md*_vd*_mw*_vw*_spec_*.dat')
+    print(f'Number of files: {len(filenames)}')
+
+
+    redshift = args.redshift
+    print(redshift)
+
+    # Compute magmatrix
+    magmatrix = get_magmatrix_from_spectra(filenames, 
+        angles, bandnames, redshift)
+
+    # Store magmatrix as pickle
+    magmatrix.knprops.to_pickle(f'knprops{filename_extension}_z{redshift}.pkl')
+    magmatrix.matrix.to_pickle(f'magmatrix{filename_extension}_z{redshift}.pkl')
+    magmatrix.times.to_pickle(f'times{filename_extension}_z{redshift}.pkl')
+
