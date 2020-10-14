@@ -1,0 +1,403 @@
+#!/usr/bin/env python
+
+__author__ = "Eve Chase <eachase@lanl.gov>"
+
+import argparse
+import glob
+import itertools
+import numpy as np
+import pandas as pd
+
+# Matplotlib settings
+import matplotlib
+matplotlib.rcParams['figure.figsize'] = (10.0, 8.0)
+matplotlib.rcParams['xtick.labelsize'] = 24.0
+matplotlib.rcParams['ytick.labelsize'] = 24.0
+matplotlib.rcParams['axes.titlesize'] = 27.0
+matplotlib.rcParams['axes.labelsize'] = 27.0
+matplotlib.rcParams['legend.fontsize'] = 24.0
+# matplotlib.rcParams['text.usetex'] = True
+matplotlib.rcParams['text.latex.preamble'] = r"\usepackage{amsmath}"
+matplotlib.rcParams['font.serif'] = ['Computer Modern', 'Times New Roman']
+matplotlib.rcParams['font.family'] = ['serif', 'STIXGeneral']
+matplotlib.rcParams['legend.frameon'] = True
+import matplotlib.pyplot as plt
+
+from cocteau import filereaders, matrix
+
+def read_data(data_dir, bandnames):
+
+    # Read all possible parameters
+    angles = np.arange(0, 54, 5) #FIXME: for final runs use all angles
+    plot_params = {
+        'morph' : '*',
+        'wind' : '*',
+        'md' : '*',
+        'vd' : '*',
+        'mw' : '*',
+        'vw' : '*',
+    }
+
+    morph = plot_params['morph']
+    wind = plot_params['wind']
+    md = plot_params['md']
+    vd = plot_params['vd']
+    mw = plot_params['mw']
+    vw = plot_params['vw']
+
+    # Read in the file
+    filenames = glob.glob(f"{data_dir}Run_T{morph}_dyn_all_lanth_wind{wind}_all_md{md}_vd{vd}_mw{mw}_vw{vw}_mags_*.dat")
+
+    fr = filereaders.LANLFileReader()
+    return fr.read_magmatrix(filenames, bandnames, angles=angles)
+
+
+def fit_accuracy(magmatrix, time, bands,
+    regression=True, prop='vd', obs_mags=None, 
+    classifier='knn'):    
+   
+    if obs_times is None:
+        # Select time
+        splitmatrix = magmatrix.split_by_time(time)
+
+        # Select the appropriate bands
+        splitmatrix.matrix = splitmatrix.matrix[bands]
+        splitmatrix.bandnames = bands
+       
+    # If previous observations have occured, manually
+    # create a new matrix
+    else:
+        # Record data from selected time 
+        # FIXME make this work for multiple bands
+        mag_col = magmatrix.matrix.loc[magmatrix.times == time][bands[0]]
+
+        # Reformat dataframe
+        mag_col = pd.DataFrame(mag_col.values, 
+            columns=[f'{bands[0][0]}{len(obs_times)}'])
+
+        # Combine with previous observations
+        magnitudes = obs_mags.join(mag_col)
+
+        # Create new matrix with all observations
+        splitmatrix = matrix.MagMatrixFixedTime(magnitudes,
+            time, bandnames, magmatrix.knprops, 
+            magmatrix.time_units, magmatrix.mag_units)
+
+    if regression:
+        return splitmatrix.regression_accuracy(prop)
+    else:
+        # Evaluate classification accuracy    
+        return splitmatrix.classification_accuracy(prop=prop,
+            classifier=classifier, report_err=True)
+
+
+def select_previous_obs(magmatrix, obs_times,
+    obs_bands):
+    magnitudes = None
+    for i, time in enumerate(obs_times):
+        bands = obs_bands[i]
+
+        # Read in bands
+        mag_col = magmatrix.matrix.loc[magmatrix.times == time][bands]
+
+        # Reformat dataframe
+        mag_col = pd.DataFrame(mag_col.values, 
+            columns=[f'{band[0]}{i}' for band in bands])
+
+        # Store all observed magnitudes
+        if i == 0:
+            magnitudes = mag_col
+        else:
+            magnitudes = magnitudes.join(mag_col)
+    return magnitudes
+
+
+
+def compute_accuracy_prop(magmatrix, bands, 
+    classifier='knn', prop='vd', obs_times=None, 
+    obs_bands=None):
+
+    # FIXME: use all available times for production runs
+    times = np.unique(magmatrix.times.values)[:174][::20]
+
+    if obs_times is not None:
+        # Limit times to after the previous observations
+        times = times[np.where(times >= np.max(obs_times))]
+
+        # Record previously computed magnitudes
+        magnitudes = select_previous_obs(magmatrix, 
+            obs_times, obs_bands)
+    else:
+        magnitudes = None
+    
+    accuracy = np.zeros_like(times)
+    acc5_err = np.zeros_like(times)
+    acc95_err = np.zeros_like(times)
+    acc_err = np.zeros((2, len(times)))
+    for i, time in enumerate(times):
+        acc, acc5, acc95 = fit_accuracy(magmatrix, time, 
+            bands, regression=False, prop=prop,
+            obs_mags=magnitudes, classifier=classifier)
+        print(time, acc, acc5, acc95)
+        accuracy[i] = acc
+        acc5_err[i] = acc5
+        acc95_err[i] = acc95
+
+    return times, accuracy, acc5_err, acc95_err
+
+
+
+
+
+
+def plot_classification(magmatrix, bandlist, classifier='knn', 
+    prop='vd', obs_times=None, obs_bands=None):
+    
+    
+    prop_colors = ["#004949","#009292","#ff6db6","#ffb6db",
+        "#490092","#006ddb","#b66dff","#6db6ff","#b6dbff",
+        "#920000","#924900","#db6d00","#24ff24","#ffff6d"]
+
+
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    # Plot previous observations
+    if obs_times is not None:
+        for i, time in enumerate(obs_times):
+            splitmatrix = magmatrix.split_by_time(time)
+            splitmatrix.matrix = splitmatrix.matrix[obs_bands[i]]
+            acc, acc5, acc95 = splitmatrix.classification_accuracy(
+                prop=prop, classifier=classifier, report_err=True)
+            print(acc, acc5, acc95)
+            if i == 0:
+                ax.errorbar(time, -acc, yerr=np.array(
+                    [acc95-acc, acc-acc5]).reshape(2, 1), marker='o',
+                    color='k', label='Previous Observation')
+
+            bandlabel = ''
+            for band in obs_bands[i]:
+                bandlabel += band[0]
+
+            ax.errorbar(time, acc, yerr=np.array(
+                [acc95-acc, acc-acc5]).reshape(2, 1), marker='o',
+                color=prop_colors.pop(), label=bandlabel)
+
+
+    for i, bands in enumerate(bandlist):
+        print(bands)
+        times, accuracy, acc5_err, acc95_err = compute_accuracy_prop(
+            magmatrix, bands, classifier, prop, obs_times, obs_bands)
+        
+        bandlabel = ''
+        for band in bands:
+            bandlabel += band[0]
+        
+        color = prop_colors.pop()
+        ax.fill_between(times, acc5_err, acc95_err, color=color, alpha=0.3)
+        ax.scatter(times, accuracy, color=color, label=bandlabel)
+    ax.set_xlabel('Time (days)')
+    ax.set_ylabel('Accuracy')
+    ax.set_ylim(0, 1.0)
+    ax.set_xlim(0.1, 10)
+    ax.set_xscale('log')
+    ax.legend(fontsize=15)
+    ax.set_title(matrix.titles[prop])    
+    
+    
+    return ax
+
+    
+
+ 
+def plot_regression(magmatrix, bandlist, prop='vd', 
+    obs_times=None, obs_bands=None):
+
+    prop_colors = ["#004949","#009292","#ff6db6","#ffb6db",
+        "#490092","#006ddb","#b66dff","#6db6ff","#b6dbff",
+        "#920000","#924900","#db6d00","#24ff24","#ffff6d"]
+
+
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    times = np.unique(magmatrix.times.values)[:174][::20]
+    obs_mags = None
+
+    # Plot previous observations
+    if obs_times is not None:
+        for i, time in enumerate(obs_times):
+            # Select only relevant times and bands
+            splitmatrix = magmatrix.split_by_time(time)
+            splitmatrix.matrix = splitmatrix.matrix[obs_bands[i]]
+             
+            # Compute typical constraints
+            credint = splitmatrix.regression_accuracy(prop)
+            print(time, np.median(credint), 
+                np.percentile(credint, 90))
+
+            if i == 0:
+                ax.scatter(time, -time, marker='*',
+                    color='k', label='Previous Observation')
+
+            bandlabel = ''
+            for band in obs_bands[i]:
+                bandlabel += band[0]
+
+            ax.scatter(time, np.median(credint), marker='*',
+                color='k', label=bandlabel)
+
+        # Limit times to after the previous observations
+        times = times[np.where(times >= np.max(obs_times))]
+
+        # Record magnitudes for past observations
+        obs_mags = select_previous_obs(magmatrix,
+            obs_times, obs_bands)
+
+
+
+    # Iterate over bands
+    for i, bands in enumerate(bandlist):
+        print(bands)
+
+        # Prepare array to store credible intervals
+        credint_arr = np.zeros((times.shape[0], 2))        
+
+        # Iterate over times
+        for j, time in enumerate(times):
+            
+            # Find distribution of credible interval widths
+            credint = fit_accuracy(magmatrix, time, bands,
+                regression=True, prop=prop, obs_mags=obs_mags)
+            median = np.percentile(credint, 50)
+            lower90 = np.percentile(credint, 90)
+            credint_arr[j] = np.array([median, lower90])
+            print(time, median, lower90) 
+
+
+        bandlabel = ''
+        for band in bands:
+            bandlabel += band[0]
+        
+        color = prop_colors.pop()
+
+        # Plot median
+        ax.plot(times, credint_arr[:, 0], color=color, label=bandlabel)
+
+        # Plot 90th percentile
+        ax.plot(times, credint_arr[:, 1], color=color, ls='-.')
+
+    # Add key for median and 90%
+    ax.plot(times, -times, color='k', label='Median')
+    ax.plot(times, -times, color='k', ls='-.',
+        label=r'90$\%$ C.I.')
+
+
+    ax.set_xlabel('Time (days)')
+    ax.set_ylabel('Credible Interval Width (Log)')
+    ax.set_ylim(0, None)
+    ax.set_xlim(0.1, 10)
+    ax.set_xscale('log')
+    ax.legend(fontsize=15)
+    ax.set_title(matrix.titles[prop])    
+   
+    return ax
+
+
+if __name__ == '__main__':
+
+    # Input parameters
+    parser = argparse.ArgumentParser()
+
+    # Available bands
+    parser.add_argument('--bands', type=str)
+
+    # Number of bands observing in
+    parser.add_argument('--num-obs', type=int, default=1)
+
+    # Previous observations (if there were any)
+    parser.add_argument('--obs-times', action='append', 
+        type=float)
+    parser.add_argument('--obs-bands', action='append')
+
+    # Classification method
+    parser.add_argument('--classifier', type=str,
+        default='knn')
+
+    # Property to sort by
+    parser.add_argument('--prop', type=str,
+        default='md') 
+
+    # Use classification accuracy, rather than regression
+    parser.add_argument('--classification', action='store_true')
+
+    # Base directory
+    parser.add_argument('--data-dir', type=str,
+        default='../kilonovae/data/kn_sim_cube*/')
+
+    # Passband filter directory
+    parser.add_argument('--band-dir', type=str,
+        default='../kilonovae/data/filters/')
+
+    # Directory for figures
+    parser.add_argument('--fig-dir', type=str,
+        default='../kilonovae/figures/accuracy_plots/')
+
+
+    args = parser.parse_args()
+
+    if args.bands is None:
+        # If no bands set, use the default below
+        bandnames = ['g-band', 'r-band', 'z-band', 'J-band', 'K-band']
+    else:
+        bandnames = [f'{i}-band' for i in args.bands]
+
+    # Group bands by number of bands available for observations
+    num_obs = args.num_obs
+    if num_obs > len(bandnames):
+        raise ValueError("num-obs cannot be longer than the \
+            number of bands available")
+    bandlist = [list(i) for i in list(itertools.combinations(
+        bandnames, num_obs))]
+
+    # Set up data holders for previous observations
+    bandnames = np.asarray(bandnames)
+    if args.obs_times is not None:
+        assert args.obs_bands is not None
+        assert len(args.obs_times) == len(args.obs_bands)
+        obs_bands = np.array([[f'{i}-band' for i in obs] \
+            for obs in args.obs_bands])
+        obs_times = np.asarray(args.obs_times)
+
+        # Add bands of previous observations into bandnames
+        bandnames = np.unique(np.concatenate((
+            bandnames, obs_bands.flatten())))
+
+    else:
+        obs_times = None
+        obs_bands = None
+
+
+    # Read data and sort into matrix
+    magmatrix = read_data(args.data_dir, bandnames)
+
+
+    # Make accuracy plot
+    if args.classification:
+        class_str = 'class'
+        ax = plot_classification(magmatrix, bandlist, 
+            args.classifier, args.prop, obs_times, 
+            obs_bands)
+
+    # Or, make plot for regression over time
+    else:
+        class_str = 'reg'
+        ax = plot_regression(magmatrix, bandlist, 
+            args.prop, obs_times, obs_bands)
+
+    outstring = f'{args.fig_dir}{class_str}_{args.prop}_{args.bands}bands'
+    for i, time in enumerate(obs_times):
+        outstring += f'_{time:.3f}{args.obs_bands[i]}'
+    outstring += '.png'
+    plt.savefig(outstring)
+
+
+
