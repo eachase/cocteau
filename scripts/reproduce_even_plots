@@ -1,0 +1,243 @@
+#!/usr/bin/env python
+
+__author__ = "Eve Chase <eachase@lanl.gov>"
+
+import argparse
+from astropy import units
+import glob
+import numpy as np
+
+# Matplotlib settings
+import matplotlib
+matplotlib.rcParams['figure.figsize'] = (10.0, 8.0)
+matplotlib.rcParams['xtick.labelsize'] = 24.0
+matplotlib.rcParams['ytick.labelsize'] = 24.0
+matplotlib.rcParams['axes.titlesize'] = 27.0
+matplotlib.rcParams['axes.labelsize'] = 27.0
+matplotlib.rcParams['legend.fontsize'] = 24.0
+# matplotlib.rcParams['text.usetex'] = True
+matplotlib.rcParams['text.latex.preamble'] = r"\usepackage{amsmath}"
+matplotlib.rcParams['font.serif'] = ['Computer Modern', 'Times New Roman']
+matplotlib.rcParams['font.family'] = ['serif', 'STIXGeneral']
+matplotlib.rcParams['legend.frameon'] = True
+import matplotlib.pyplot as plt
+
+from cocteau import observations, filereaders
+
+# Titles
+element_titles = {
+    'br':r'Sensitivity to Br $\left(\mathrm{X_{Br}} = ? \right)$',
+    'ce':r'Sensitivity to Ce $\left(\mathrm{X_{Ce}} = 0.0023 \right)$',
+    'dy':r'Sensitivity to Dy $\left(\mathrm{X_{Dy}} = 0.0043 \right)$',
+    'er':r'Sensitivity to Er $\left(\mathrm{X_{Er}} = 0.0026 \right)$',
+    'eu':r'Sensitivity to Eu $\left(\mathrm{X_{Eu}} = 0.0010 \right)$',
+    'gd':r'Sensitivity to Gd $\left(\mathrm{X_{Gd}} = 0.0033 \right)$',
+    'ho':r'Sensitivity to Ho $\left(\mathrm{X_{Ho}} = 0.0010 \right)$',
+    'la':r'Sensitivity to La $\left(\mathrm{X_{La}} = 0.0016 \right)$',
+    'nd':r'Sensitivity to Nd $\left(\mathrm{X_{Nd}} = 0.0039 \right)$',
+    #'pd':r'Sensitivity to Pd $\left(\mathrm{X_{Pd}} = 0.0039 \right)$',
+    'pm':r'Sensitivity to Pm $\left(\mathrm{X_{Pm}} = 0.0001 \right)*$',
+    'pr':r'Sensitivity to Pr $\left(\mathrm{X_{Pr}} = 0.0011 \right)$',
+    'se':r'Sensitivity to Se $\left(\mathrm{X_{Se}} = ? \right)$',
+    'sm':r'Sensitivity to Sm $\left(\mathrm{X_{Sm}} = 0.0020 \right)$',
+    'tb':r'Sensitivity to Tb $\left(\mathrm{X_{Tb}} = 0.0007 \right)$',
+    'te':r'Sensitivity to Te $\left(\mathrm{X_{Te}} = ? \right)$',
+    'tm':r'Sensitivity to Tm $\left(\mathrm{X_{Tm}} = 0.0004 \right)$',
+    'u':r'Sensitivity to U $\left(\mathrm{X_{U}} = 0.0030 \right)$',
+    'yb':r'Sensitivity to Yb $\left(\mathrm{X_{Yb}} = 0.0034 \right)$',
+    'zr':r'Sensitivity to Zr $\left(\mathrm{X_{Zr}} = ? \right)$',
+}
+
+# FIXME: what's a good way to deal with these hardcoded band names?
+band_filenames = {
+    'r-band':'r_LSST.dat',
+    'g-band':'g_LSST.dat',
+    'z-band':'z_LSST.dat',
+    'J-band':'J_2MASS.dat',
+    'K-band':'K_2MASS.dat',
+}
+
+
+
+def set_default_bands(band_dir='./'):
+
+    # Initiate FileReaders for band file types
+    fr_space = filereaders.FileReader()
+    fr_tab = filereaders.TabFileReader()
+
+    band_collector = observations.BandCollector()
+    for bandname in ['r-band','g-band', 'z-band', 'J-band', 'K-band']:
+    
+        # Set band filename
+        band_filename = f"{band_dir}{band_filenames[bandname]}"
+
+        # Read in band data  
+        if 'LSST' in band_filename:
+            band = fr_space.read_band(band_filename, bandname,
+                wl_units=units.angstrom)
+        elif '2MASS' in band_filename:
+            band = fr_tab.read_band(band_filename, bandname,
+                wl_units=units.angstrom)
+        band_collector.append(band)
+
+    return band_collector
+
+
+def composite_plot(lightcurve_collector, element):
+    """
+    Plot light curves in format similar to Even et al. (2019)
+
+    Parameters:
+    -----------
+    lightcurve_collector: nested dictionary
+        - dictionary with keys for composition type: 
+            'x10', 'o10', 'baseline'
+        - contains dictionary with keys for each band
+
+    Returns:
+    --------
+    ax: Axes object 
+        contains figure information
+    """
+
+    fig, ax = plt.subplots()
+
+    # Check for baseline
+    baseline = False
+    if 'baseline' in lightcurve_collector.keys():
+        baseline = True
+
+    # For each band
+    for bandname in lightcurve_collector['o10'].keys():
+        
+        # If available, plot baseline
+        if baseline:
+            lightcurve = lightcurve_collector['baseline'][bandname]
+            ax.plot(lightcurve.times.to(units.day).value, 
+                lightcurve.magnitudes.to(units.ABmag).value,
+                color=observations.colors[bandname])
+    
+        # Plot error bars for elemental variations
+        ax.fill_between(lightcurve_collector['x10'][bandname].times.to(
+            units.day).value, 
+            lightcurve_collector['o10'][bandname].magnitudes.to(units.ABmag).value,
+            lightcurve_collector['x10'][bandname].magnitudes.to(units.ABmag).value,
+            color=observations.colors[bandname], alpha=0.5)
+
+    ax.set_xlim(0.2, 11)
+    ax.set_xscale('log')
+    ax.set_xlabel('Time (days)')
+
+    ax.set_ylim([-15, -7])
+    ax.set_ylabel('AB Mag')
+
+    ax.set_title(element_titles[element])
+
+    fig.gca().invert_yaxis()
+
+    return ax
+
+
+if __name__ == '__main__':
+
+    # Input parameters
+    parser = argparse.ArgumentParser()
+
+    # Study Name
+    parser.add_argument('--study', type=str, default='SolarUPm')
+
+    # Element
+    parser.add_argument('--element', type=str, default='nd')
+
+    # Base directory
+    parser.add_argument('--data-dir', type=str, 
+        default='/Users/r349989/Documents/kilonovae/data/composition_sensitivity/')
+
+    # Passband filter directory
+    parser.add_argument('--band-dir', type=str, 
+        default='/Users/r349989/Documents/kilonovae/data/filters/')
+
+    # Base directory
+    parser.add_argument('--fig-dir', type=str, 
+        default='./')
+
+    # Boolean argument to read in magnitudes from file
+    parser.add_argument('--from-mags', action='store_true')
+
+    args = parser.parse_args()
+    study = args.study
+    element = args.element
+    data_dir = args.data_dir
+
+    if args.from_mags:
+        filetype = 'mags'
+        mag_key = 'ProvidedMags'
+    else:
+        filetype = 'spec'
+        mag_key = 'ComputedMags'
+
+    # Make a dictionary of all bands we'll plot
+    bands = set_default_bands(args.band_dir)    
+
+    # Set a dictionary with the o10 and x10 filenames
+    filename_o10 = glob.glob(
+        f"{data_dir}{study}_XX_xo10/{study}_{element}_o10_{filetype}_*.dat")[0]
+    filename_x10 = glob.glob(
+        f"{data_dir}{study}_XX_xo10/{study}_{element}_x10_{filetype}_*.dat")[0]
+    composition_files = {'o10': filename_o10, 'x10': filename_x10}
+
+    # If using the SolarUPm study, also include a baseline
+    if study == 'SolarUPm':
+        filename_base = f"{data_dir}SolarUPm_XX_xo10/SolarUPm_baseline_{filetype}_2019-04-03.dat"
+        composition_files['baseline'] = filename_base
+
+
+    lightcurve_collector = {}
+
+    # For each iteration (o10, x10, baseline):
+    for composition_type, filename in composition_files.items():
+
+        # If from_mags is set, create a LightCurve object from magnitudes
+        if args.from_mags:
+            
+            fr = filereaders.LANLFileReader()
+
+            # For each band
+            lightcurves_per_band = {}
+            for bandname in bands.bandnames:
+                # Read and store lightcurve
+                lightcurves_per_band[bandname] = fr.read_lightcurve(filename,
+                    bandname)
+    
+            lightcurve_collector[composition_type] = lightcurves_per_band
+
+
+        # If from_mags is not set, compute the LightCurve from spectra
+        # and bands
+        else:
+
+            fr = filereaders.LANLFileReader()
+            spectra = fr.read_spectra(filename)
+
+            # Compute LightCurve for each Band based on spectra 
+            # at different timesteps
+            lightcurves_per_band = {}
+            for bandname, band in bands.bands_dict.items():
+                lightcurves_per_band[bandname] = observations.LightCurve(
+                    spectra=spectra, band=band)
+
+            lightcurve_collector[composition_type] = lightcurves_per_band
+
+    # Plot the o10, x10, and baseline light curves in one composite plot
+    ax = composite_plot(lightcurve_collector, element)
+    figname = f"{args.fig_dir}/{study}_{element}_{mag_key}"
+    plt.savefig(f"{figname}.pdf")
+    plt.savefig(f"{figname}.png", dpi=400)
+
+
+
+
+
+
+
+
