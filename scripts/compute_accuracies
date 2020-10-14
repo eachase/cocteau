@@ -1,0 +1,315 @@
+#!/usr/bin/env python
+
+__author__ = "Eve Chase <eachase@lanl.gov>"
+
+import argparse
+import glob
+import itertools
+import numpy as np
+import pandas as pd
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, cross_val_score
+
+
+import filereaders
+import matrix
+
+def read_data(data_dir, bandnames):
+
+    # Read all possible parameters
+    angles = np.arange(0, 54, 5) #FIXME: for final runs use all angles
+    plot_params = {
+        'morph' : '*',
+        'wind' : '*',
+        'md' : '*',
+        'vd' : '*',
+        'mw' : '*',
+        'vw' : '*',
+    }
+
+    morph = plot_params['morph']
+    wind = plot_params['wind']
+    md = plot_params['md']
+    vd = plot_params['vd']
+    mw = plot_params['mw']
+    vw = plot_params['vw']
+
+    # Read in the file
+    filenames = glob.glob(f"{data_dir}Run_T{morph}_dyn_all_lanth_wind{wind}_all_md{md}_vd{vd}_mw{mw}_vw{vw}_mags_*.dat")
+
+    fr = filereaders.LANLFileReader()
+    return fr.read_magmatrix(filenames, bandnames, angles=angles)
+
+
+
+def select_previous_obs(magmatrix, obs_times,
+    obs_bands):
+    magnitudes = None
+    for i, time in enumerate(obs_times):
+        bands = obs_bands[i]
+
+        # Read in bands
+        mag_col = magmatrix.matrix.loc[magmatrix.times == time][bands]
+
+        # Reformat dataframe
+        mag_col = pd.DataFrame(mag_col.values, 
+            columns=[f'{band[0]}{i}' for band in bands])
+
+        # Store all observed magnitudes
+        if i == 0:
+            magnitudes = mag_col
+        else:
+            magnitudes = magnitudes.join(mag_col)
+    return magnitudes
+
+
+def get_classification_data(magmatrix, bandlist=None, 
+    time=None, prop='vd', obs_times=None, obs_bands=None):
+ 
+    # If no new times are provided
+    if time is None:
+        input_matrix = select_previous_obs(magmatrix, 
+            obs_times, obs_bands)
+
+    else:
+
+        # Select time and bands of interest
+        splitmatrix = magmatrix.split_by_time(time)
+        input_matrix = splitmatrix.matrix[bandlist]
+
+        if obs_times is not None:
+            # Get data corresponding to previous observations
+            prev_mags = select_previous_obs(magmatrix, obs_times,
+                obs_bands)
+
+            # Combine with observations at current time with possible bands
+            input_matrix = pd.DataFrame(input_matrix.values).join(prev_mags)
+
+
+
+   
+    # Format Data
+    X = input_matrix.values
+    prop_values = magmatrix.knprops[prop]
+    unique_propvalues = np.unique(prop_values)
+    y = np.zeros_like(prop_values)
+    for i, prop_value in enumerate(unique_propvalues):
+        y[np.where(prop_values == prop_value)] = i
+
+        
+    # Split data into testing and training sets
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2)
+
+    # Train Random Forest Classifier with Cross-Validation
+    # FIXME: set up a smarter set of parameters
+    param_grid = {
+        'n_estimators': [100, 1000, 2000],
+        'max_features': ['sqrt'],
+        'max_depth': [50, 100, 250],
+        'min_samples_split': [3, 5, 20],
+        'bootstrap': [True]
+    }
+
+    param_search = RandomizedSearchCV(RandomForestClassifier(),
+        param_grid, cv=3)
+
+    param_search.fit(X_train, y_train)
+    
+    # Train a Random Forest Classifier with the Best Params
+    best_params = param_search.best_params_
+    
+    clf = RandomForestClassifier(
+        n_estimators = best_params['n_estimators'],
+        min_samples_split = best_params['min_samples_split'],
+        max_features = 'sqrt',
+        bootstrap = True,
+        max_depth = best_params['max_depth']
+    )
+
+    clf.fit(X_train, y_train)
+
+    # Record various fit metrics
+    cv_scores = cross_val_score(clf, X_train, y_train, cv=10)
+    print(time, np.median(cv_scores))
+    return np.array([np.median(cv_scores), 
+        np.percentile(cv_scores, 5), 
+        np.percentile(cv_scores, 95),
+        clf.score(X_test, y_test)])
+
+
+def compute_accuracy(magmatrix, bandlist, times,
+    prop='vd', obs_times=None, obs_bands=None, out_dir='./'):
+    
+    # Set up dataframe to store classification data
+    classification_data = np.zeros((times.shape[0],4))
+    print(classification_data.shape)    
+
+    # Set up classifier for each time
+    for idx, time in enumerate(times):
+        classification_data[idx] = get_classification_data(
+            magmatrix, bandlist, time, prop=prop, 
+            obs_times=obs_times, obs_bands=obs_bands)
+
+    # Save to data frame
+    data = pd.DataFrame(classification_data, 
+        columns=[['median', 'percentile5', 'percentile95',
+        'test_acc']])
+
+    # Append times to data frame
+    data['time'] = times
+    
+    bands = ''
+    for band in bandlist:
+        bands += f'{band[0]}'
+    if obs_times is None:
+        filename = f'{out_dir}/{len(bandlist)}bands_1time/{bands}_{prop}.csv'
+        data.to_csv(filename)
+    else:
+        # Record accuracies from previous observations alone
+        sorted_idx = np.argsort(obs_times)
+        sorted_bands = obs_bands[sorted_idx]
+        sorted_times = obs_times[sorted_idx]
+        prev_obs_data = np.zeros((sorted_times.shape[0], 4))
+        for idx, time in enumerate(sorted_times):
+            # Record the constraints with all observations up to this point
+            prev_obs_times = sorted_times[:(idx+1)]
+            prev_obs_bands = sorted_bands[:(idx+1)]
+
+            mags = select_previous_obs(magmatrix, prev_obs_times, 
+                prev_obs_bands)
+
+            prev_obs_data[idx] = get_classification_data(magmatrix, 
+                prop=prop, obs_times=prev_obs_times, 
+                obs_bands=prev_obs_bands)
+
+        prev_obs_data = pd.DataFrame(prev_obs_data, 
+            columns=[['median', 'percentile5', 'percentile95', 'test_acc']])
+
+        # Include times and bands
+        prev_obs_data['time'] = sorted_times
+        prev_obs_data['bands'] = [('').join([band[0] for band in obs_band]) for obs_band in sorted_bands]
+
+
+        filename = f'{out_dir}/{len(bandlist)}bands_1time/{bands}_{prop}'
+        for idx, prev_obs in enumerate(sorted_times):
+            bands_for_str = ''
+            for band in sorted_bands[idx]:
+                bands_for_str += f'{band[0]}'
+
+            filename += f"_{bands_for_str}{('p').join(str(round(prev_obs, 3)).split('.'))}"
+        filename += '.csv'
+
+        # Write previous observations to top of file
+        with open(filename, 'w') as f:
+            prev_obs_data.to_csv(f)
+
+        # Write resulting additional observations
+        with open(filename, 'a') as f:
+            data.to_csv(f)
+    print(f'Saving to {filename}')
+
+
+
+if __name__ == '__main__':
+
+    # Input parameters
+    parser = argparse.ArgumentParser()
+
+    # Available bands
+    parser.add_argument('--bands', type=str)
+
+    # Number of bands observing in
+    parser.add_argument('--num-obs', type=int, default=1)
+
+    # Previous observations (if there were any)
+    parser.add_argument('--obs-times', action='append', 
+        type=float)
+    parser.add_argument('--obs-bands', action='append')
+
+    # Property to sort by
+    parser.add_argument('--prop', type=str,
+        default='md') 
+
+    # Use classification accuracy, rather than regression
+    parser.add_argument('--classification', action='store_true')
+
+    # Base directory
+    parser.add_argument('--data-dir', type=str,
+        default='../kilonovae/data/kn_sim_cube1.2/')
+
+    # Passband filter directory
+    parser.add_argument('--band-dir', type=str,
+        default='../kilonovae/data/filters/')
+
+    # Directory to place output data
+    parser.add_argument('--out-dir', type=str,
+        default='../kilonovae/data/accuracies/')
+
+
+    args = parser.parse_args()
+
+    if args.bands is None:
+        # If no bands set, use the default below
+        bandnames = ['g-band', 'r-band', 'z-band', 'J-band', 'K-band']
+    else:
+        bandnames = [f'{i}-band' for i in args.bands]
+
+    # Group bands by number of bands available for observations
+    num_obs = args.num_obs
+    if num_obs > len(bandnames):
+        raise ValueError("num-obs cannot be longer than the \
+            number of bands available")
+    bandlist = [list(i) for i in list(itertools.combinations(
+        bandnames, num_obs))]
+
+    # Set up data holders for previous observations
+    bandnames = np.asarray(bandnames)
+    if args.obs_times is not None:
+        assert args.obs_bands is not None
+        assert len(args.obs_times) == len(args.obs_bands)
+        obs_bands = np.array([[f'{i}-band' for i in obs] \
+            for obs in args.obs_bands])
+        obs_times = np.asarray(args.obs_times)
+
+        # Add bands of previous observations into bandnames
+        for bandgroup in obs_bands:
+            for band in bandgroup:
+                if band not in bandnames:
+                    bandnames.append(band)
+
+
+
+    else:
+        obs_times = None
+        obs_bands = None
+
+
+    # Read data and sort into matrix
+    magmatrix = read_data(args.data_dir, bandnames)
+
+    # Set times
+    shortened_times = np.unique(magmatrix.times)[:174:10]
+
+    # Add obs_times into times array
+    obs_times_combined = obs_times.flatten()
+    shortened_times = np.unique(np.insert(shortened_times, 
+        np.searchsorted(shortened_times, obs_times_combined),
+        obs_times_combined))
+
+    # Compute accuracies
+    if args.classification:
+        for bandnames in bandlist:
+            print(bandnames)
+            ax = compute_accuracy(magmatrix, bandnames, 
+                shortened_times, args.prop, obs_times, obs_bands,
+                args.out_dir)
+            print('\n')
+
+    # Compute regression instead
+    #else:
+    #    ax = plot_regression(magmatrix, bandlist, 
+    #        args.prop, obs_times, obs_bands)
+
+
