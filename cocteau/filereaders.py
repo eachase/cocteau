@@ -188,11 +188,6 @@ class LANLFileReader(FileReader):
         if remove_zero:
             spectrum = spectrum.drop(spectrum[spectrum.flux_density == 0].index)
 
-        # Remove all wavelengths beyond 8 microns or so
-        spectrum = spectrum.drop(
-            spectrum[spectrum.wavelength_mid > (
-            8 * units.micron).to(wl_units)].index)
-
         # Store wavelengths in cm
         wavelengths = spectrum['wavelength_mid'].values * wl_units
 
