@@ -300,6 +300,7 @@ class LightCurve(object):
         # For each timestep, compute the magnitude
         self.magnitudes = np.zeros_like(spectra.spectra)
         lc_valid = True
+
         for i, spectrum in enumerate(spectra.spectra):
             if lc_valid:
                 mag = compute_magnitude_at_timestep(
@@ -460,11 +461,11 @@ def compute_magnitude_at_timestep(spectrum, band,
     numerator = fixed_quad(
             _numerator_func, bound_min, bound_max)[0]
  
-    if spectrum.wavelength_arr[0].value > (
-        bound_min / redshift_factor) or (
-        spectrum.wavelength_arr[-1].value < (
-        bound_max / redshift_factor)):
-        numerator = 0
+    #if spectrum.wavelength_arr[0].value > (
+    #    bound_min / redshift_factor) or (
+    #    spectrum.wavelength_arr[-1].value < (
+    #    bound_max / redshift_factor)):
+    #    numerator = 0
 
     assert denominator != 0
 

@@ -9,9 +9,31 @@ import glob
 import numpy as np
 import pandas as pd
 
-import observations
-import filereaders
-import matrix
+from cocteau import observations, filereaders, matrix
+
+# FIXME: find a better way to incorporate this into filereaders
+band_files = {
+    'g-band': ['norm', 'g_LSST.dat'],
+    'r-band': ['norm', 'r_LSST.dat'],
+    'z-band': ['norm', 'z_LSST.dat'],
+    'J-band': ['tab',  'J_2MASS.dat'],
+    'K-band': ['tab',  'K_2MASS.dat'],
+    'F1280W': ['norm', 'JWST_MIRI.F1280W.dat'],
+    'F1800W': ['norm', 'JWST_MIRI.F1800W.dat'],
+    'F2100W': ['norm', 'JWST_MIRI.F2100W.dat'],
+    'F2550W': ['norm', 'JWST_MIRI.F2550W.dat'],
+    'UVW2'  : ['norm', 'Swift_UVOT.UVW2.dat'],
+    'GeminiR': ['norm', 'Gemini_GMOS-N.r.dat'],
+    'F606W' : ['norm', 'HST_ACS_WFC.F606W.dat'],
+    'F125W' : ['norm', 'HST_WFC3_IR.F125W.dat'],
+    'F160W' : ['norm', 'HST_WFC3_IR.F160W.dat'],
+    'F200W' : ['norm', 'JWST_NIRCam.F200W.dat'],
+    'F115W' : ['norm', 'JWST_NIRCam.F115W.dat'], 
+    'F444W' : ['norm', 'JWST_NIRCam.F444W.dat'], 
+
+}
+
+
 
 
 def get_magmatrix_from_spectra(filenames, angles, bandnames,
@@ -83,17 +105,20 @@ if __name__ == '__main__':
 
     # Base directory
     parser.add_argument('--data-dir', type=str,
-        default='../../../kilonovae/data/kn_sim_cube1.2/')
+        default='/Users/r349989/Documents/kilonovae/data/kn_sim_cube1.2/')
+
+    # Filter directory
+    parser.add_argument('--filter-dir', type=str,
+        default='/Users/r349989/Documents/kilonovae/data/filters/')
+    parser.add_argument('-f', '--filters', nargs='+', type=str)
 
     # Set number of every other angle to select
     parser.add_argument('--angle-factor', type=int, default=54)
 
-    # Set number of every other angle to select
     parser.add_argument('-a', '--angles', nargs='+', type=int)
 
     # Provide distance to kilonova
-    parser.add_argument('--redshift', type=float, default=0.483,
-        help='Units of Mpc')
+    parser.add_argument('--redshift', type=float, default=0.0098)
 
     args = parser.parse_args()
 
@@ -102,10 +127,21 @@ if __name__ == '__main__':
     fr_tab = filereaders.TabFileReader()
 
     bands = {}
-    bands['GeminiR'] = fr.read_band('filters/Gemini_GMOS-N.r.dat', bandname='GeminiR', wl_units=u.Angstrom)
-    bands['F606W'] = fr.read_band('filters/HST_ACS_WFC.F606W.dat', bandname='F606W', wl_units=u.Angstrom)   
-    bands['F125W'] = fr.read_band('filters/HST_WFC3_IR.F125W.dat', bandname='F125W', wl_units=u.Angstrom)
-    bands['F160W'] = fr.read_band('filters/HST_WFC3_IR.F160W.dat', bandname='F160W', wl_units=u.Angstrom)
+    #bands['GeminiR'] = fr.read_band('filters/Gemini_GMOS-N.r.dat', bandname='GeminiR', wl_units=u.Angstrom)
+    for bandname in args.filters:
+        # Select band object
+        filetype, filename = band_files[bandname]
+
+        filename = f'{args.filter_dir}{filename}'
+
+        # Store the band
+        if filetype == 'norm':
+            bands[bandname] = fr.read_band(filename, 
+                bandname=bandname, wl_units=u.Angstrom)
+        elif filetype == 'tab':
+            bands[bandname] = fr_tab.read_band(filename,
+                bandname=bandname, wl_units=u.Angstrom)
+
 
     # Get bandnames
     bandnames = bands.keys()
