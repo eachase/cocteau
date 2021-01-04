@@ -8,7 +8,6 @@ import os.path
 
 from cocteau import matrix, observations
 
-
 morph_keys = {
     'TS': 0,
     'TP': 1,
@@ -23,6 +22,48 @@ morph_keys = {
     'T': 10,
 }
 
+# Key to filenames -- FIXME: there should be a better way to organize this
+band_files = {
+    'SIBEX':  ['norm', 'SIBEX', 'SIBEX_UV.dat'],
+    'u-band': ['norm', 'VRO', 'u_LSST.dat'],
+    'g-band': ['norm', 'VRO', 'g_LSST.dat'],
+    'r-band': ['norm', 'VRO', 'r_LSST.dat'],
+    'i-band': ['norm', 'VRO', 'i_LSST.dat'],
+    'z-band': ['norm', 'VRO', 'z_LSST.dat'],
+    'y-band': ['norm', 'VRO', 'y_LSST.dat'],
+    'J-band': ['tab',  '2MASS', 'J_2MASS.dat'],
+    'H-band': ['tab',  '2MASS', 'H_2MASS.dat'],
+    'K-band': ['tab',  '2MASS', 'K_2MASS.dat'],
+    'UVW2'  : ['norm', 'Swift', 'Swift_UVOT.UVW2.dat'],
+    'GeminiR': ['norm', 'Gemini', 'Gemini_GMOS-N.r.dat'],
+    'F606W' : ['norm', 'HST', 'HST_ACS_WFC.F606W.dat'],
+    'F125W' : ['norm', 'HST', 'HST_WFC3_IR.F125W.dat'],
+    'F160W' : ['norm', 'HST', 'HST_WFC3_IR.F160W.dat'],
+    'F070W' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F070W.dat'],
+    'F090W' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F090W.dat'],
+    'F115W' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F115W.dat'],
+    'F140M' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F140M.dat'],
+    'F150W' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F150W.dat'],
+    'F200W' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F200W.dat'],
+    'F277W' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F277W.dat'],
+    'F356W' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F356W.dat'],
+    'F444W' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F444W.dat'],
+    'F480M' : ['norm', 'JWST', 'JWST/JWST_NIRCam.F480M.dat'],
+    'F560W': ['norm', 'JWST', 'JWST/JWST_MIRI.F560W.dat'],
+    'F770W': ['norm', 'JWST', 'JWST/JWST_MIRI.F770W.dat'],
+    'F1000W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1000W.dat'],
+    'F1280W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1280W.dat'],
+    'F1500W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1500W.dat'],
+    'F1800W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1800W.dat'],
+    'F2100W': ['norm', 'JWST', 'JWST/JWST_MIRI.F2100W.dat'],
+    'F2550W': ['norm', 'JWST', 'JWST/JWST_MIRI.F2550W.dat'],
+    'RomanR': ['norm', 'Roman', 'WFIRST_WFI.R062.dat'],
+    'RomanZ': ['norm', 'Roman', 'WFIRST_WFI.Z087.dat'],
+    'RomanY': ['norm', 'Roman', 'WFIRST_WFI.Y106.dat'],
+    'RomanJ': ['norm', 'Roman', 'WFIRST_WFI.J129.dat'],
+    'RomanH': ['norm', 'Roman', 'WFIRST_WFI.H158.dat'],
+    'RomanF': ['norm', 'Roman', 'WFIRST_WFI.F184.dat'],
+}
 
 
 class FileReader(object):
