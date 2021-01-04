@@ -13,24 +13,45 @@ from cocteau import observations, filereaders, matrix
 
 # FIXME: find a better way to incorporate this into filereaders
 band_files = {
+    'SIBEX':  ['norm', 'SIBEX_UV.dat'],
+    'u-band': ['norm', 'u_LSST.dat'],
     'g-band': ['norm', 'g_LSST.dat'],
     'r-band': ['norm', 'r_LSST.dat'],
+    'i-band': ['norm', 'i_LSST.dat'],
     'z-band': ['norm', 'z_LSST.dat'],
+    'y-band': ['norm', 'y_LSST.dat'],
     'J-band': ['tab',  'J_2MASS.dat'],
+    'H-band': ['tab',  'H_2MASS.dat'],
     'K-band': ['tab',  'K_2MASS.dat'],
-    'F1280W': ['norm', 'JWST_MIRI.F1280W.dat'],
-    'F1800W': ['norm', 'JWST_MIRI.F1800W.dat'],
-    'F2100W': ['norm', 'JWST_MIRI.F2100W.dat'],
-    'F2550W': ['norm', 'JWST_MIRI.F2550W.dat'],
     'UVW2'  : ['norm', 'Swift_UVOT.UVW2.dat'],
     'GeminiR': ['norm', 'Gemini_GMOS-N.r.dat'],
     'F606W' : ['norm', 'HST_ACS_WFC.F606W.dat'],
     'F125W' : ['norm', 'HST_WFC3_IR.F125W.dat'],
     'F160W' : ['norm', 'HST_WFC3_IR.F160W.dat'],
-    'F200W' : ['norm', 'JWST_NIRCam.F200W.dat'],
-    'F115W' : ['norm', 'JWST_NIRCam.F115W.dat'], 
-    'F444W' : ['norm', 'JWST_NIRCam.F444W.dat'], 
-
+    'F070W' : ['norm', 'JWST/JWST_NIRCam.F070W.dat'], 
+    'F090W' : ['norm', 'JWST/JWST_NIRCam.F090W.dat'], 
+    'F115W' : ['norm', 'JWST/JWST_NIRCam.F115W.dat'], 
+    'F140M' : ['norm', 'JWST/JWST_NIRCam.F140M.dat'], 
+    'F150W' : ['norm', 'JWST/JWST_NIRCam.F150W.dat'], 
+    'F200W' : ['norm', 'JWST/JWST_NIRCam.F200W.dat'],
+    'F277W' : ['norm', 'JWST/JWST_NIRCam.F277W.dat'],
+    'F356W' : ['norm', 'JWST/JWST_NIRCam.F356W.dat'],
+    'F444W' : ['norm', 'JWST/JWST_NIRCam.F444W.dat'], 
+    'F480M' : ['norm', 'JWST/JWST_NIRCam.F480M.dat'],
+    'F560W': ['norm', 'JWST/JWST_MIRI.F560W.dat'],
+    'F770W': ['norm', 'JWST/JWST_MIRI.F770W.dat'],
+    'F1000W': ['norm', 'JWST/JWST_MIRI.F1000W.dat'],
+    'F1280W': ['norm', 'JWST/JWST_MIRI.F1280W.dat'],
+    'F1500W': ['norm', 'JWST/JWST_MIRI.F1500W.dat'],
+    'F1800W': ['norm', 'JWST/JWST_MIRI.F1800W.dat'],
+    'F2100W': ['norm', 'JWST/JWST_MIRI.F2100W.dat'],
+    'F2550W': ['norm', 'JWST/JWST_MIRI.F2550W.dat'],
+    'RomanR': ['norm', 'WFIRST_WFI.R062.dat'],
+    'RomanZ': ['norm', 'WFIRST_WFI.Z087.dat'],
+    'RomanY': ['norm', 'WFIRST_WFI.Y106.dat'],
+    'RomanJ': ['norm', 'WFIRST_WFI.J129.dat'],
+    'RomanH': ['norm', 'WFIRST_WFI.H158.dat'],
+    'RomanF': ['norm', 'WFIRST_WFI.F184.dat'],
 }
 
 
@@ -106,6 +127,10 @@ if __name__ == '__main__':
     # Base directory
     parser.add_argument('--data-dir', type=str,
         default='/Users/r349989/Documents/kilonovae/data/kn_sim_cube1.2/')
+        #default='/Users/r349989/Documents/kilonovae/data/composition_sensitivity/SA1_mvye/')
+
+    # Output directory
+    parser.add_argument('-o', '--out-dir', type=str, default='kn_sim_cube1.2/')
 
     # Filter directory
     parser.add_argument('--filter-dir', type=str,
@@ -153,12 +178,16 @@ if __name__ == '__main__':
     else:
         angles = args.angles
         filename_extension = f"{('_').join([str(i) for i in angles])}"
+
+    # Include bands in name
+    filename_extension += f"_{('_').join([str(i) for i in bandnames])}"
     print(angles)
 
-    # Prepare filenames
-    filenames = glob.glob(f'{args.data_dir}Run_T*_dyn_all_lanth_wind*_all_md*_vd*_mw*_vw*_spec_*.dat')
-    print(f'Number of files: {len(filenames)}')
+    # Prepare filenames --FIXME hardcoding
+    #filenames = glob.glob(f'{args.data_dir}SA1_m*_v*_Ye*_spec_*.dat')
+    filenames = glob.glob(f'{args.data_dir}Run_T*_dyn_all_lanth_wind*_all_md*_vd*_mw*_vw*_spec*.dat')
 
+    print(f'Number of files: {len(filenames)}')
 
     redshift = args.redshift
     print(redshift)
@@ -168,7 +197,8 @@ if __name__ == '__main__':
         angles, bandnames, redshift)
 
     # Store magmatrix as pickle
-    magmatrix.knprops.to_pickle(f'knprops{filename_extension}_z{redshift}.pkl')
-    magmatrix.matrix.to_pickle(f'magmatrix{filename_extension}_z{redshift}.pkl')
-    magmatrix.times.to_pickle(f'times{filename_extension}_z{redshift}.pkl')
+    filename_extension += f'_z{redshift}.pkl'
+    magmatrix.knprops.to_pickle(f'{args.out_dir}knprops{filename_extension}')
+    magmatrix.matrix.to_pickle(f'{args.out_dir}magmatrix{filename_extension}')
+    magmatrix.times.to_pickle(f'{args.out_dir}times{filename_extension}')
 

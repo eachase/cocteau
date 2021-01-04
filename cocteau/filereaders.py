@@ -496,6 +496,12 @@ class LANLFileReader(FileReader):
         vw = None
         num_comp = 2
 
+        # Reduce filename to last part
+        try:
+            filename = filename.split('/')[-1]
+        except:
+            pass
+
         for info in filename.split('_'):
             # Record morphology
             if morph is None:
@@ -572,20 +578,27 @@ class LANLFileReader(FileReader):
  
             # Record velocity and ejecta mass for single component models
             elif num_comp == 1:
-                if 'm' and 'v' in info:                
+                if 'm' in info and 'v' in info:                
                     mass, vel = info.split('v')
                     md = float(mass[2:])
                     vd = float(vel)
 
-
                 # Record mass
                 elif 'm' == info[0] and info != 'mags':
                     md = float(info[2:])
+                    # Recast masses
+                    if md in [1, 5]:
+                        md /= 100
+                    elif md in [2]:
+                        md /= 1000
 
                 # Record velocity
                 elif 'v' == info[0]:
-                    vd = float(info[2:])
+                    vd = float(info[1:]) / 100
 
+                # Record composition
+                elif 'Ye' == info[:2]:
+                    wind = float(info[2:]) / 100
 
         param_values = {
             'morph' : morph,

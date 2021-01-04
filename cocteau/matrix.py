@@ -206,7 +206,7 @@ class MagMatrix(KNMatrix):
         # Trim properties for a certain time
         magnitudes = self.matrix.loc[self.times == time]
         idx_for_time = np.asarray([i[0] for i in magnitudes.index])
-        knprops = self.knprops.iloc[idx_for_time]
+        knprops = self.knprops.loc[idx_for_time]
 
         return MagMatrixFixedTime(magnitudes, time,
             self.bandnames, knprops, self.time_units,
