@@ -241,7 +241,7 @@ class LANLFileReader(FileReader):
 
 
     def read_spectra(self, filename, time_units=units.day,
-        wl_units=units.cm, angle=0, remove_zero=True,
+        wl_units=units.cm, angles=[0], remove_zero=True,
         fd_units=(units.erg / units.s / units.cm**2 / units.angstrom)):
         """
         Read in spectra at multiple timesteps
@@ -264,6 +264,10 @@ class LANLFileReader(FileReader):
 
         assert os.path.isfile(filename)
 
+        # Check that units are appropriate
+        wl_units.to(units.angstrom)
+        fd_units.to(units.erg / units.s / units.cm**2 / units.angstrom)
+
 
         # Determine time steps in file
         nrows, timesteps_in_file = self.parse_file(
@@ -272,31 +276,59 @@ class LANLFileReader(FileReader):
         if len(timesteps_in_file) == 0:
             raise IOError("File not read. Check file type.")
 
-
-        # Determine number of angles in file
-        num_angles = pd.read_csv(filename, delim_whitespace=True,
-            skiprows=1, nrows=1).shape[1] - 2
-
-
-        # Set up SpectraOverTime object
+        # Set up properties to collect spectra
         timesteps = np.array(list(timesteps_in_file.keys())) * time_units
         spectra_arr = np.zeros(len(timesteps), dtype=object)
+
+        col_names = ['wavelength_low', 'wavelength_high']
+        spectra = {}
+        num_angles = len(angles)
+        for angle in angles:
+            col_names.append(f'spec_angle{angle}')
+            spectra[angle] = observations.SpectraOverTime(
+                timesteps=timesteps, num_angles=num_angles)
+
+        col_idx = np.concatenate([np.array([0,1]),
+            np.asarray(angles) + 2])
+
         # Read in the spectrum at a given timestep
         for i, time in enumerate(timesteps):
-            spectra_arr[i] = self.read_spectrum(
-                filename, timesteps_in_file, nrows, time,
-                angle=angle, remove_zero=remove_zero,
-                wl_units=wl_units, fd_units=fd_units)
-                
+            rows_to_skip = np.arange(timesteps_in_file[time.value])
+                        
+            spectrum_df = pd.read_csv(filename, 
+                skiprows=rows_to_skip, names=col_names, 
+                usecols=col_idx, nrows=nrows, 
+                delim_whitespace=True, dtype='float')
+            # Store each angular bin separately
+            for angle in angles:
+                col_name = f'spec_angle{angle}'
+                spectrum_copy = spectrum_df.copy()
+
+                # Remove all points where the spectrum is zero
+                if remove_zero:
+                    spectrum_copy = spectrum_copy.drop(
+                        spectrum_copy[spectrum_copy[col_name] == 0].index)
+
+                # Compute average wavelength in bin
+                wavelengths = 0.5 * (
+                    spectrum_copy['wavelength_low'] + \
+                    spectrum_copy['wavelength_high']).values * \
+                    wl_units
+
+                # Make Spectrum object 
+                flux_density_arr = spectrum_copy[col_name].values * \
+                    fd_units
+
+                spectra[angle].spectra = np.append(
+                    spectra[angle].spectra,
+                    observations.Spectrum(time, wavelengths, 
+                    flux_density_arr))
+
         assert timesteps.size > 0
         assert spectra_arr.size > 0
 
-        # Check that units are appropriate
-        wl_units.to(units.angstrom)
-        fd_units.to(units.erg / units.s / units.cm**2 / units.angstrom)
-
-        return observations.SpectraOverTime(timesteps, spectra_arr,
-            num_angles=num_angles)
+        return spectra 
+            
 
 
     def read_lightcurve(self, filename, bandname='r-band',
