@@ -180,7 +180,7 @@ class LANLFileReader(FileReader):
     Read files in the specific format used by LANL's CTA
     """
     def read_spectrum(self, filename, timesteps_in_file, 
-        nrows, timestep, wl_units=units.cm, angle=0, remove_zero=True,
+        nrows, timestep, wl_units=units.cm, angle=0, remove_zero=False,
         fd_units=(units.erg / units.s / units.cm**2 / units.angstrom)):
         """
         Read in spectra at one timesteps
@@ -241,7 +241,7 @@ class LANLFileReader(FileReader):
 
 
     def read_spectra(self, filename, time_units=units.day,
-        wl_units=units.cm, angles=[0], remove_zero=True,
+        wl_units=units.cm, angles=[0], remove_zero=False,
         fd_units=(units.erg / units.s / units.cm**2 / units.angstrom)):
         """
         Read in spectra at multiple timesteps
