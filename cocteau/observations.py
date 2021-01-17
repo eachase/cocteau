@@ -104,6 +104,34 @@ class Band(object):
         ax.set_title(self.bandname)
         return ax
 
+    def effective_wavelength(self):
+        """
+        Compute effective wavelength
+        """
+
+        # Interpolate band
+        self.interpolate()
+
+        # Set bounds of integration in cm -- FIXME this is dumb
+        bound_min = self.min.cgs.value
+        bound_max = self.max.cgs.value
+
+        # Integrate to find effective wavelength
+        _numerator_func = lambda wavelength : \
+            wavelength * self.func(wavelength)
+        _denominator_func = lambda wavelength : \
+            self.func(wavelength)
+        numerator = fixed_quad(
+            _numerator_func, bound_min, bound_max)[0]
+        denominator = fixed_quad(
+            _denominator_func, bound_min, bound_max)[0]
+           
+        self.wavelength_eff = (numerator / denominator * \
+            units.cm).to(units.Angstrom)   
+
+        return self.wavelength_eff
+
+
 
 class BandCollector(object):
     """
