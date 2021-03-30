@@ -69,6 +69,9 @@ band_files = {
     'RomanJ': ['norm', 'Roman', 'Roman/WFIRST_WFI.J129.dat'],
     'RomanH': ['norm', 'Roman', 'Roman/WFIRST_WFI.H158.dat'],
     'RomanF': ['norm', 'Roman', 'Roman/WFIRST_WFI.F184.dat'],
+    'ZTF_g' : ['norm', 'ZTF', 'ZTF/Palomar_ZTF.g.dat'],
+    'ZTF_r' : ['norm', 'ZTF', 'ZTF/Palomar_ZTF.r.dat'],
+    'ZTF_i' : ['norm', 'ZTF', 'ZTF/Palomar_ZTF.i.dat'],
 }
 
 
