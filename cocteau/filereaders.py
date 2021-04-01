@@ -2,6 +2,7 @@ __doc__ = "Tools to read data files containing spectra, bands, and light curves"
 __author__ = "Eve Chase <eachase@lanl.gov>"
 
 from astropy import units
+import json
 import numpy as np
 import pandas as pd
 import os.path
@@ -698,12 +699,33 @@ class LANLFileReader(FileReader):
  
         return knprops
 
+class ObservationalFileReader(FileReader):
+    """Read observational astronomy data products"""
+    def read_spectra(self, filename):
 
+        # Read in observational json
+        with open(filename, "r") as read_file:
+            data = json.load(read_file)
 
+        spectra = observations.ObservedSpectraCollection()
 
+        for idx in np.arange(50):
+            spec = data['GW170817']['spectra'][idx]
+            
+            
+            spec_data = np.asarray(
+                data['GW170817']['spectra'][idx]['data']).astype(
+                'float')
 
+            spectra.add_spectrum(observations.ObservedSpectrum(
+                     obs_time=spec['time'], 
+                     wavelengths=spec_data[:,0],
+                     fluxes=spec_data[:,1], 
+                     u_time=spec['u_time'],
+                     u_wavelength=spec['u_wavelengths'],
+                     u_flux=spec['u_fluxes']))
 
-
+        return spectra
 
 
 
