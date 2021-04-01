@@ -74,6 +74,12 @@ band_files = {
     'ZTF_r' : ['norm', 'ZTF', 'ZTF/Palomar_ZTF.r.dat'],
     'ZTF_i' : ['norm', 'ZTF', 'ZTF/Palomar_ZTF.i.dat'],
     'Dorado': ['norm', 'Dorado', 'Dorado/nuv_d.dat'],
+    'g-bg': ['norm', 'BlackGEM', 'BlackGEM/g-bg.dat'],
+    'i-bg': ['norm', 'BlackGEM', 'BlackGEM/i-bg.dat'],
+    'r-bg': ['norm', 'BlackGEM', 'BlackGEM/r-bg.dat'],
+    'u-bg': ['norm', 'BlackGEM', 'BlackGEM/u-bg.dat'],
+    'vr-bg': ['norm', 'BlackGEM', 'BlackGEM/vr-bg.dat'],
+    'z-bg': ['norm', 'BlackGEM', 'BlackGEM/z-bg.dat'],
 }
 
 
