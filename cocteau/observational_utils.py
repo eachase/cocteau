@@ -2,7 +2,11 @@ __doc__ = "Tools for common plot types."
 __author__ = "Eve Chase <eachase@lanl.gov>"
 
 from astropy import units as u
-from astropy.cosmology import Planck18_arXiv_v2
+try:
+    from astropy.cosmology import Planck18_arXiv_v2
+except:
+    from astropy.cosmology import Planck15
+
 from astropy.time import Time
 import glob
 import numpy as np
