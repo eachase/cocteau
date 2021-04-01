@@ -162,8 +162,8 @@ def read_blackbody(bb_file, distance):
 
 def compute_at2017gfo(data_file, band, lim_mag, 
     redshifts=np.array(
-        [0.0098, 0.05, 0.075, 0.1, 0.125, 0.15, 0.2, 0.25, 
-        0.3, 0.35, 0.4, 0.45, 0.5])):
+        [0.001, 0.005, 0.0098, 0.0125, 0.025, 0.05, 0.075, 0.1, 
+        0.125, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7])):
     """
     Compute detectability contour for AT2017gfo in a given band
     """
