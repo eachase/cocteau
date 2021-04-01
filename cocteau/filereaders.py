@@ -73,6 +73,7 @@ band_files = {
     'ZTF_g' : ['norm', 'ZTF', 'ZTF/Palomar_ZTF.g.dat'],
     'ZTF_r' : ['norm', 'ZTF', 'ZTF/Palomar_ZTF.r.dat'],
     'ZTF_i' : ['norm', 'ZTF', 'ZTF/Palomar_ZTF.i.dat'],
+    'Dorado': ['norm', 'Dorado', 'Dorado/nuv_d.dat'],
 }
 
 
