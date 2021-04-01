@@ -2,7 +2,11 @@ __doc__ = "Store magnitudes, passbands, and spectra series."
 __author__ = "Eve Chase <eachase@lanl.gov>"
 
 from astropy import constants, units
-from astropy.cosmology import Planck18_arXiv_v2
+try:
+    from astropy.cosmology import Planck18_arXiv_v2
+except:
+    from astropy.cosmology import Planck15
+
 import numpy as np
 from scipy.integrate import fixed_quad, quad
 from scipy.interpolate import interp1d
