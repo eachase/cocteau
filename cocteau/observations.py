@@ -4,7 +4,7 @@ __author__ = "Eve Chase <eachase@lanl.gov>"
 from astropy import constants, units
 from astropy.cosmology import Planck18_arXiv_v2
 import numpy as np
-from scipy.integrate import fixed_quad
+from scipy.integrate import fixed_quad, quad
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize, brentq
 
@@ -122,9 +122,9 @@ class Band(object):
             wavelength * self.func(wavelength)
         _denominator_func = lambda wavelength : \
             self.func(wavelength)
-        numerator = fixed_quad(
+        numerator = quad(
             _numerator_func, bound_min, bound_max)[0]
-        denominator = fixed_quad(
+        denominator = quad(
             _denominator_func, bound_min, bound_max)[0]
            
         self.wavelength_eff = (numerator / denominator * \
