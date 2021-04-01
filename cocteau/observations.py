@@ -2,6 +2,7 @@ __doc__ = "Store magnitudes, passbands, and spectra series."
 __author__ = "Eve Chase <eachase@lanl.gov>"
 
 from astropy import constants, units
+from astropy.cosmology import Planck18_arXiv_v2
 import numpy as np
 from scipy.integrate import fixed_quad
 from scipy.interpolate import interp1d
@@ -433,6 +434,64 @@ class LightCurve(object):
 
             fig.gca().invert_yaxis()
         return ax
+
+
+class ObservedSpectrum(Spectrum):
+    
+    def __init__(self, obs_time, wavelengths, 
+        fluxes, u_time, u_wavelength, u_flux, 
+        redshift=0.009727, merger_time=57982.528524):
+        
+        # Store redshift
+        self.redshift = redshift
+        
+        # Convert redshift to luminosity distance
+        self.dist_lum = Planck18_arXiv_v2.luminosity_distance(redshift).to(units.pc).value
+               
+        # Set up time
+        if u_time == 'MJD':
+            self.obs_time = (float(obs_time) - merger_time) * units.day
+        else:
+            raise ValueError('Time units not supported.')
+        self.rest_time = self.obs_time / (1 + self.redshift)
+        
+        # Set up wavelengths
+        if u_wavelength == 'Angstrom':
+            wl_units = units.Angstrom
+        else:
+            raise ValueError('Wavelength units not supported.')
+                        
+        self.obs_wavelengths = wavelengths * wl_units
+        self.rest_wavelengths = self.obs_wavelengths / (1 + self.redshift)
+        
+        # Set up fluxes
+        if u_flux == 'erg/s/cm^2/Angstrom':
+            flux_units = units.erg / units.s / units.cm**2 / units.Angstrom
+        else:
+            raise ValueError('Flux units not supported.')
+            
+            
+        # Restrict flux values to positive numbers
+        self.flux_density_arr = fluxes * flux_units * (self.dist_lum / 10)**2
+        
+        # Set up parameters to match Spectrum class
+        self.timestep = self.rest_time
+        self.wavelength_arr = self.rest_wavelengths
+
+class ObservedSpectraCollection(object):
+    
+    def __init__(self):
+        
+        self.times = np.array([])
+        self.spectra = {}
+        
+    def add_spectrum(self, spectrum):
+        
+        time = spectrum.rest_time.to(units.day).value
+        self.times = np.append(self.times, time)
+        self.spectra[time] = spectrum
+        
+
 
 
 
