@@ -186,8 +186,12 @@ def compute_at2017gfo(data_file, band, lim_mag,
     redshift_arr = []
     detectable_arr = []
 
-    # Get wavelength ranges from band
-    band_wl = band.wavelength_arr.value
+    # Get wavelength ranges from band where tranmission is non-zero
+    # FIXME - this is a little hard-code-y
+    band_wl = band.wavelength_arr
+    band_func = band.interpolate()
+    band_wl = band_wl[np.where(
+        band_func(band_wl.cgs) > 1e-2)[0]].value
     min_wl = band_wl[0]
     max_wl = band_wl[-1]
 
@@ -206,7 +210,7 @@ def compute_at2017gfo(data_file, band, lim_mag,
             wavelength_arr = spectrum.wavelength_arr.value * (1 + redshift)
             min_wl_spec = np.min(wavelength_arr)
             max_wl_spec = np.max(wavelength_arr)
-
+            
             in_range = False
             if min_wl_spec <= min_wl:
                 if max_wl_spec >= max_wl:
