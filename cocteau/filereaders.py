@@ -80,6 +80,8 @@ band_files = {
     'u-bg': ['norm', 'BlackGEM', 'BlackGEM/u-bg.dat'],
     'vr-bg': ['norm', 'BlackGEM', 'BlackGEM/vr-bg.dat'],
     'z-bg': ['norm', 'BlackGEM', 'BlackGEM/z-bg.dat'],
+    'DECam_i': ['norm', 'DECam', 'DECam/CTIO_DECam.i.dat'],
+    'DECam_z': ['norm', 'DECam', 'DECam/CTIO_DECam.z.dat'],
 }
 
 
