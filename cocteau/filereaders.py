@@ -83,6 +83,9 @@ band_files = {
     'DECam_i': ['norm', 'DECam', 'DECam/CTIO_DECam.i.dat'],
     'DECam_z': ['norm', 'DECam', 'DECam/CTIO_DECam.z.dat'],
     'ULTRASAT': ['norm', 'ULTRASAT', 'ULTRASAT/nuv.dat'],
+    'VistaJ': ['norm', 'VISTA', 'VISTA/Paranal_VISTA.J.dat'],
+    'VistaKs': ['norm', 'VISTA', 'VISTA/Paranal_VISTA.Ks.dat'],
+    'VistaY': ['norm', 'VISTA', 'VISTA/Paranal_VISTA.Y.dat'],
 }
 
 
