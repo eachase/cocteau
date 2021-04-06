@@ -82,6 +82,7 @@ band_files = {
     'z-bg': ['norm', 'BlackGEM', 'BlackGEM/z-bg.dat'],
     'DECam_i': ['norm', 'DECam', 'DECam/CTIO_DECam.i.dat'],
     'DECam_z': ['norm', 'DECam', 'DECam/CTIO_DECam.z.dat'],
+    'ULTRASAT': ['norm', 'ULTRASAT', 'ULTRASAT/nuv.dat'],
 }
 
 
