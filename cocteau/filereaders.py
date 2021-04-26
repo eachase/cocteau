@@ -90,10 +90,11 @@ band_files = {
     'VistaH': ['norm', 'VISTA', 'VISTA/Paranal_VISTA.H.dat'],
     'w-band': ['norm', 'DDOTI', 'DDOTI/SLOAN_SDSS.r.dat'],
     'GOTO': ['norm', 'GOTO', 'GOTO/L-band.dat'],
-    'PRIME': ['norm', 'PrimeZ', 'PRIME/Z-band.dat'],
-    'PRIME': ['norm', 'PrimeY', 'PRIME/Y-band.dat'],
-    'PRIME': ['norm', 'PrimeJ', 'PRIME/J-band.dat'],
-    'PRIME': ['norm', 'PrimeH', 'PRIME/H-band.dat'],
+    'PrimeZ': ['norm', 'PRIME', 'PRIME/Z-band.dat'],
+    'PrimeY': ['norm', 'PRIME', 'PRIME/Y-band.dat'],
+    'PrimeJ': ['norm', 'PRIME', 'PRIME/J-band.dat'],
+    'PrimeH': ['norm', 'PRIME', 'PRIME/H-band.dat'],
+
 }
 
 
