@@ -89,6 +89,7 @@ band_files = {
     'VistaZ': ['norm', 'VISTA', 'VISTA/Paranal_VISTA.Z.dat'],
     'VistaH': ['norm', 'VISTA', 'VISTA/Paranal_VISTA.H.dat'],
     'w-band': ['norm', 'DDOTI', 'DDOTI/SLOAN_SDSS.r.dat'],
+    'GOTO': ['norm', 'GOTO', 'GOTO/L-band.dat'],
 
 }
 
