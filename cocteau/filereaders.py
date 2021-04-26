@@ -94,7 +94,9 @@ band_files = {
     'PrimeY': ['norm', 'PRIME', 'PRIME/Y-band.dat'],
     'PrimeJ': ['norm', 'PRIME', 'PRIME/J-band.dat'],
     'PrimeH': ['norm', 'PRIME', 'PRIME/H-band.dat'],
-
+    'WinterY': ['norm', 'WINTER', 'WINTER/Y-band.dat'],
+    'WinterJ': ['norm', 'WINTER', 'WINTER/J-band.dat'],
+    'WinterH': ['norm', 'WINTER', 'WINTER/H-band.dat'],
 }
 
 
