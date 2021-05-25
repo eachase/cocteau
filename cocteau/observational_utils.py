@@ -195,7 +195,6 @@ def compute_at2017gfo(data_file, band, lim_mag,
     min_wl = band_wl[0]
     max_wl = band_wl[-1]
 
-
     fig, ax = plt.subplots()
     for obs_time, spectrum in spectra.spectra.items():
 
@@ -220,8 +219,7 @@ def compute_at2017gfo(data_file, band, lim_mag,
             
                     if np.all(flux_in_range >= 0):
                         in_range = True
-
-        
+            
         
             # Plot if in range
             if in_range:
