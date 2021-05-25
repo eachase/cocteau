@@ -12,7 +12,6 @@ matplotlib.rcParams['ytick.labelsize'] = 24.0
 matplotlib.rcParams['axes.titlesize'] = 27.0
 matplotlib.rcParams['axes.labelsize'] = 27.0
 matplotlib.rcParams['legend.fontsize'] = 24.0
-# matplotlib.rcParams['text.usetex'] = True
 matplotlib.rcParams['text.latex.preamble'] = r"\usepackage{amsmath}"
 matplotlib.rcParams['font.serif'] = ['Computer Modern', 'Times New Roman']
 matplotlib.rcParams['font.family'] = ['serif', 'STIXGeneral']
