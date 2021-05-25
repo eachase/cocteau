@@ -747,6 +747,7 @@ class ObservationalFileReader(FileReader):
                      fluxes=spec_data[:,1], 
                      u_time=spec['u_time'],
                      u_wavelength=spec['u_wavelengths'],
+                     source=spec['source'],
                      u_flux=spec['u_fluxes']))
 
         return spectra
