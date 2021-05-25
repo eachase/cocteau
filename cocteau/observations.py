@@ -444,8 +444,13 @@ class ObservedSpectrum(Spectrum):
     
     def __init__(self, obs_time, wavelengths, 
         fluxes, u_time, u_wavelength, u_flux, 
-        redshift=0.009727, merger_time=57982.528524):
+        redshift=0.009727, merger_time=57982.528524,
+        source=None):
         
+
+        # Store source (reference) for observation
+        self.reference = source
+
         # Store redshift
         self.redshift = redshift
         
