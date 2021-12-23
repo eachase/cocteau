@@ -97,6 +97,12 @@ band_files = {
     'WinterY': ['norm', 'WINTER', 'WINTER/Y-band.dat'],
     'WinterJ': ['norm', 'WINTER', 'WINTER/J-band.dat'],
     'WinterH': ['norm', 'WINTER', 'WINTER/H-band.dat'],
+    'Gamow0' : ['norm', 'Gamow',  'Gamow/Gamow0.dat'],
+    'Gamow1' : ['norm', 'Gamow',  'Gamow/Gamow1.dat'],
+    'Gamow2' : ['norm', 'Gamow',  'Gamow/Gamow2.dat'],
+    'Gamow3' : ['norm', 'Gamow',  'Gamow/Gamow3.dat'],
+    'Gamow4' : ['norm', 'Gamow',  'Gamow/Gamow4.dat'],
+    'RAPTOR' : ['norm', 'RAPTOR', 'RAPTOR/optical.dat'],
 }
 
 
