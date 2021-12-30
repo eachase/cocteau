@@ -59,6 +59,7 @@ band_files = {
     'F560W': ['norm', 'JWST', 'JWST/JWST_MIRI.F560W.dat'],
     'F770W': ['norm', 'JWST', 'JWST/JWST_MIRI.F770W.dat'],
     'F1000W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1000W.dat'],
+    'F1130W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1130W.dat'],
     'F1280W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1280W.dat'],
     'F1500W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1500W.dat'],
     'F1800W': ['norm', 'JWST', 'JWST/JWST_MIRI.F1800W.dat'],
