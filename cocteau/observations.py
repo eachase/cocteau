@@ -88,7 +88,7 @@ class Band(object):
         return self.func
 
 
-    def plot(self, ax=None):
+    def plot(self, ax=None, **kwargs):
         """
         Plot band in format similar to Even et al. (2019)
 
@@ -102,11 +102,10 @@ class Band(object):
             fig, ax = plt.subplots()
 
         ax.plot(self.wavelength_arr, self.transmission_arr,
-            color=colors[self.bandname])
+            **kwargs)
         ax.set_xlabel('Wavelength (cm)')
         ax.set_ylim([0,1])
         ax.set_ylabel('Transmission Percentage')
-        ax.set_title(self.bandname)
         return ax
 
     def effective_wavelength(self):
@@ -425,7 +424,7 @@ class LightCurve(object):
 
         ax.plot(self.times.to(units.day).value, 
             self.magnitudes.to(units.ABmag).value,
-            color=colors[bandname], **kwargs)
+            **kwargs)
 
         if set_figure:
             ax.set_xscale('log')
@@ -572,6 +571,7 @@ def compute_magnitude_at_timestep(spectrum, band,
 
     # FIXME: supply number of angular bins
     fv = num_angles * numerator / denominator  / c
+
 
     # Return a magnitude
     if fv == 0:
