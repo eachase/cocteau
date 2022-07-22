@@ -24,6 +24,7 @@ morph_keys = {
 }
 
 # Key to filenames -- FIXME: there should be a better way to organize this
+# Also it's odd that the filters themselves aren't located in this repository
 band_files = {
     'SIBEX':  ['norm', 'SIBEX', 'SIBEX/SIBEX_UV.dat'],
     'u-band': ['norm', 'VRO', 'VRO/u_LSST.dat'],
@@ -104,6 +105,10 @@ band_files = {
     'Gamow3' : ['norm', 'Gamow',  'Gamow/Gamow3.dat'],
     'Gamow4' : ['norm', 'Gamow',  'Gamow/Gamow4.dat'],
     'RAPTOR' : ['norm', 'RAPTOR', 'RAPTOR/optical.dat'],
+    'GenericU': ['norm', 'Generic', 'Generic/Generic_Bessell.U.dat'],
+    'GenericR': ['norm', 'Generic', 'Generic/Generic_Bessell.R.dat'],
+    'GenericI': ['norm', 'Generic', 'Generic/Generic_Bessell.I.dat'],
+    'GenericK': ['norm', 'Generic', 'Generic/Generic_Bessell.K.dat'],
 }
 
 
