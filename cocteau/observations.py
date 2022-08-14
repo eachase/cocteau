@@ -15,6 +15,8 @@ from scipy.optimize import minimize, brentq
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 
+from cocteau import observational_utils as utils
+
 colors = {
     'g-band':'green',
     'r-band':'red',
@@ -424,16 +426,31 @@ class LightCurve(object):
             set_figure = True
             fig, ax = plt.subplots()
 
-        ax.plot(self.times.to(units.day).value, 
-            self.magnitudes.to(units.ABmag).value,
-            **kwargs)
+        # Set up parameters for plotting
+        times = self.times.to(units.day).value
+        mags = self.magnitudes.to(units.ABmag).value
+
+        if self.redshift == 0:
+            ylabel = 'Absolute Magnitude (AB)'
+        else:
+            ylabel = 'Apparent Magnitude (AB)'    
+    
+            # Redshift the times
+            times *= self.redshift + 1
+
+            # Compute apparent magnitude
+            dist_lum = Planck18_arXiv_v2.luminosity_distance(
+                self.redshift)
+            mags = utils.appMag(mags, dist_lum)
+       
+
+        ax.plot(times, mags, **kwargs)
 
         if set_figure:
             ax.set_xscale('log')
             ax.set_xlabel('Time (days)')
 
-            ax.set_ylim([-20, 0])
-            ax.set_ylabel('AB Mag')
+            ax.set_ylabel(ylabel)
             
             ax.set_title(title)    
 
