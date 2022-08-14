@@ -14,6 +14,7 @@ from scipy.optimize import minimize, brentq
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
+plt.rcParams['figure.facecolor'] = 'white'
 
 from cocteau import observational_utils as utils
 
