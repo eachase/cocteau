@@ -198,8 +198,8 @@ class Spectrum(object):
         """
         # FIXME: assert that wavelengths are sorted
         self.timestep = timestep 
-        self.wavelength_arr = wavelengths
-        self.flux_density_arr = flux_density
+        self.wavelength_arr = wavelengths.cgs.value
+        self.flux_density_arr = flux_density.cgs.value
 
 
 
@@ -221,7 +221,7 @@ class Spectrum(object):
 
 
 
-    def plot(self):
+    def plot(self, ax=None, **kwargs):
         """
         Plot spectrum in format similar to Even et al. (2019)
 
@@ -233,11 +233,10 @@ class Spectrum(object):
 
         fig, ax = plt.subplots()
         ax.plot(self.wavelength_arr * 1e4,
-            np.log10(self.flux_density_arr * (4 * np.pi * (10 * 3.08567758e18)**2)))
+            np.log10(self.flux_density_arr * (4 * np.pi * (10 * 3.08567758e18)**2)),
+            **kwargs)
 
         ax.set_ylabel(r'$\log_{10}$ dL\d$\lambda$  (erg s$^-1 \AA^{-1}$) + const. ')
-
-
         ax.set_xlabel('Wavelength (Microns)')
         ax.set_xscale('log')
         ax.set_xticks([0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8])
