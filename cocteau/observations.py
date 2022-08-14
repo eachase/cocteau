@@ -231,7 +231,10 @@ class Spectrum(object):
             contains figure information
         """
 
-        fig, ax = plt.subplots()
+
+        if ax is None:
+            fig, ax = plt.subplots()
+
         ax.plot(self.wavelength_arr * 1e4,
             np.log10(self.flux_density_arr * (4 * np.pi * (10 * 3.08567758e18)**2)),
             **kwargs)
