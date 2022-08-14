@@ -48,7 +48,7 @@ print(f'Effective wavelength: {wl_eff:.2f}')
 
 
     
-![png](README_files/README_3_1.png)
+![png](example/README_3_1.png)
     
 
 
@@ -98,7 +98,7 @@ spectrum.plot()
 
 
     
-![png](README_files/README_5_2.png)
+![png](example/README_5_2.png)
     
 
 
@@ -150,7 +150,7 @@ spectra[0].spectra[time_idx].plot()
 
 
     
-![png](README_files/README_9_2.png)
+![png](example/README_9_2.png)
     
 
 
@@ -184,7 +184,7 @@ ax.legend()
 
 
     
-![png](README_files/README_12_1.png)
+![png](example/README_12_1.png)
     
 
 
@@ -242,7 +242,7 @@ ax.set_ylim(5, None)
 
 
     
-![png](README_files/README_16_1.png)
+![png](example/README_16_1.png)
     
 
 
@@ -285,7 +285,7 @@ ax.set_title(r'VRO/$r$-band at ' + f'z={redshift:.3f}')
 
 
     
-![png](README_files/README_19_1.png)
+![png](example/README_19_1.png)
     
 
 
