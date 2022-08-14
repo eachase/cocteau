@@ -198,8 +198,8 @@ class Spectrum(object):
         """
         # FIXME: assert that wavelengths are sorted
         self.timestep = timestep 
-        self.wavelength_arr = wavelengths.cgs.value
-        self.flux_density_arr = flux_density.cgs.value
+        self.wavelength_arr = wavelengths.cgs
+        self.flux_density_arr = flux_density.cgs
 
 
 
@@ -235,8 +235,8 @@ class Spectrum(object):
         if ax is None:
             fig, ax = plt.subplots()
 
-        ax.plot(self.wavelength_arr * 1e4,
-            np.log10(self.flux_density_arr * (4 * np.pi * (10 * 3.08567758e18)**2)),
+        ax.plot(self.wavelength_arr.cgs.value * 1e4,
+            np.log10(self.flux_density_arr.cgs.value * (4 * np.pi * (10 * 3.08567758e18)**2)),
             **kwargs)
 
         ax.set_ylabel(r'$\log_{10}$ dL\d$\lambda$  (erg s$^-1 \AA^{-1}$) + const. ')
