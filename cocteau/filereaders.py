@@ -9,6 +9,7 @@ import os.path
 
 from cocteau import matrix, observations
 
+# Keys for morphology in LANL models
 morph_keys = {
     'TS': 0,
     'TP': 1,
@@ -225,8 +226,8 @@ class LANLFileReader(FileReader):
     """
     Read files in the specific format used by LANL's CTA
     """
-    def read_spectrum(self, filename, timesteps_in_file, 
-        nrows, timestep, wl_units=units.cm, angle=0, remove_zero=False,
+    def read_spectrum(self, filename, timestep, angle=0, 
+        remove_zero=False, wl_units=units.cm, 
         fd_units=(units.erg / units.s / units.cm**2 / units.angstrom)):
         """
         Read in spectra at one timesteps
@@ -235,15 +236,11 @@ class LANLFileReader(FileReader):
 
         Parameters
         ----------
-        filename: string
-            path to spectrum file
-
-        timesteps_in_file: dictionary
-
-        nrows: int
-
         timestep: float
+            time to read spectrum at
 
+        remove_zero: boolean
+            Remove zero values from spectrum (helps with interpolation and plotting)
 
         Returns
         -------
@@ -254,6 +251,9 @@ class LANLFileReader(FileReader):
             array in erg / s / cm^3
         """
 
+        # Determine time steps in file
+        nrows, timesteps_in_file = self.parse_file(
+            filename, key='time')
 
         rows_to_skip = np.arange(timesteps_in_file[timestep.value])
 
