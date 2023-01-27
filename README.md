@@ -1,11 +1,12 @@
 # cocteau
 Author: Eve Chase
 
-Astronomical tools for reading and manipulatng lightcurves, spectra, and bandpass filter functions.
+Astronomical tools for reading and manipulating lightcurves, spectra, and bandpass filter functions.
 
 
 ## Example use cases
 
+To run the examples below, first import the necessary packages. You can replace `Planck18_arXiv_v2` with your favorite cosmological parameters.
 
 ```python
 from astropy import units
